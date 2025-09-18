@@ -1,0 +1,78 @@
+// Prisma schema for Sports Trends
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SourceType {
+  rss
+  api
+}
+
+enum LogType {
+  ingestion
+  analysis
+  digest
+  error
+}
+
+model Source {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String
+  type      SourceType
+  url       String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+
+  articles  Article[]
+}
+
+model Article {
+  id           String    @id @default(uuid()) @db.Uuid
+  sourceId     String    @db.Uuid
+  source       Source    @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  title        String
+  url          String
+  publishedAt  DateTime
+  content      String
+  lang         String
+  sports       String[]
+  teams        String[]
+  countries    String[]
+  sentiment    Float?
+  hash         String    @unique
+  createdAt    DateTime  @default(now())
+}
+
+model TrendDay {
+  id            String    @id @default(uuid()) @db.Uuid
+  date          DateTime  @db.Date
+  sport         String
+  score         Float
+  topArticleIds String[]
+  createdAt     DateTime  @default(now())
+
+  @@index([date, sport])
+}
+
+model Digest {
+  id        String   @id @default(uuid()) @db.Uuid
+  date      DateTime @unique @db.Date
+  html      String
+  md        String
+  lang      String
+  createdAt DateTime @default(now())
+}
+
+model Log {
+  id        String   @id @default(uuid()) @db.Uuid
+  timestamp DateTime @default(now())
+  type      LogType
+  message   String
+}
